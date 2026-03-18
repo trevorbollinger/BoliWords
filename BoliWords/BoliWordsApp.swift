@@ -14,5 +14,6 @@ struct BoliWordsApp: App {
         WindowGroup {
             GameView()
         }
+        .modelContainer(for: [WordProgress.self, UserStats.self])
     }
 }

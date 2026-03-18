@@ -6,14 +6,18 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct DebugView: View {
     let word: String?
     let frequency: [Character: Int]
     let subWords: [String]
-    let onRefresh: () -> Void
+    let onWipeComplete: () -> Void
     
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("wordIndex") private var wordIndex: Int = 0
+    @State private var showingConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -51,13 +55,36 @@ struct DebugView: View {
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        onRefresh()
+                    Button(role: .destructive) {
+                        showingConfirmation = true
                     } label: {
-                        Image(systemName: "arrow.clockwise")
+                        Image(systemName: "trash")
+                            .foregroundStyle(.red)
                     }
                 }
             }
+            .alert("Wipe Progress?", isPresented: $showingConfirmation) {
+                Button("Wipe Everything", role: .destructive) {
+                    wipeProgress()
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("This will permanently delete all local and iCloud game progress. This action cannot be undone.")
+            }
         }
+    }
+    
+    private func wipeProgress() {
+        // Delete all WordProgress records
+        try? modelContext.delete(model: WordProgress.self)
+        try? modelContext.delete(model: UserStats.self)
+        try? modelContext.save()
+        
+        // Reset AppStorage
+        wordIndex = 0
+        
+        // Notify GameView to clear UI state and reload
+        onWipeComplete()
+        dismiss()
     }
 }
