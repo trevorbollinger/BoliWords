@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct KeyItem: Identifiable, Equatable, Hashable {
     let id: UUID
@@ -15,6 +16,7 @@ struct KeyItem: Identifiable, Equatable, Hashable {
 struct KeypadView: View {
     let currentInput: String
     let validationColor: Color
+    var isValidating: Bool = false
     let keys: [KeyItem]
     let disabledKeys: Set<UUID>
     var isClearDisabled: Bool = true
@@ -26,13 +28,18 @@ struct KeypadView: View {
     var onBackspaceTap: (() -> Void)? = nil
     
     
-    // Layout for the grid. 4 columns and 5-6 space between.
-    private let columns = [
-        GridItem(.flexible(), spacing: 6),
-        GridItem(.flexible(), spacing: 6),
-        GridItem(.flexible(), spacing: 6),
-        GridItem(.flexible(), spacing: 6)
-    ]
+    // Dynamic layout for the grid. Adjusts based on number of keys.
+    private var columns: [GridItem] {
+        let count: Int
+        if keys.count >= 9 || keys.count == 5 {
+            count = 5
+        } else if keys.count == 3 {
+            count = 3
+        } else {
+            count = 4
+        }
+        return Array(repeating: GridItem(.flexible(), spacing: 6), count: count)
+    }
     
     var body: some View {
         VStack(spacing: 12) {
@@ -44,10 +51,18 @@ struct KeypadView: View {
                 .padding()
                 .frame(maxWidth: .infinity)
                 .frame(height: 80)
-                .background(validationColor)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .glassModifier(in: RoundedRectangle(cornerRadius: 20))
+                .background {
+                    ZStack {
+                        validationColor
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                        
+//                        RoundedRectangle(cornerRadius: 20)
+//                            .glassModifier(in: RoundedRectangle(cornerRadius: 20))
+                    }
+                    .opacity(isValidating ? 1 : 0)
+                }
                 .padding(.bottom, 5)
+                .animation(.default, value: isValidating)
                 .animation(.default, value: validationColor)
             
             // Control Buttons (Shuffle & Backspace)
@@ -65,6 +80,7 @@ struct KeypadView: View {
                     .padding(.vertical, 8)
                     .glassModifier(in: Capsule())
                 }
+                .buttonStyle(PopButtonStyle())
                 
                 Spacer()
                 
@@ -78,6 +94,7 @@ struct KeypadView: View {
                         .padding(.vertical, 8)
                         .glassModifier(in: Capsule())
                 }
+                .buttonStyle(PopButtonStyle())
                 .disabled(currentInput.isEmpty)
                 .opacity(currentInput.isEmpty ? 0.3 : 1.0)
             }
@@ -103,10 +120,11 @@ struct KeypadView: View {
                         .frame(height: 54)
                         .background(Color.red.opacity(0.12))
                         .foregroundColor(.red)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                         .glassModifier(in: RoundedRectangle(cornerRadius: 20))
 
                 }
+                .buttonStyle(PopButtonStyle())
                 .disabled(isClearDisabled)
                 .opacity(isClearDisabled ? 0.3 : 1.0)
                 
@@ -119,10 +137,11 @@ struct KeypadView: View {
                         .frame(height: 54)
                         .background(isValidateDisabled ? Color.gray.opacity(0.2) : Color.green)
                         .foregroundColor(isValidateDisabled ? .gray : .white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                         .glassModifier(in: RoundedRectangle(cornerRadius: 20))
 
                 }
+                .buttonStyle(PopButtonStyle())
                 .disabled(isValidateDisabled)
             }
             .padding(.top, 4)
@@ -132,6 +151,15 @@ struct KeypadView: View {
         .padding(12)
         .glassModifier(in: RoundedRectangle(cornerRadius: 20))
  
+    }
+}
+
+struct PopButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.8 : 1.0)
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+            .animation(.interactiveSpring(response: 0.15, dampingFraction: 0.4, blendDuration: 0), value: configuration.isPressed)
     }
 }
 
@@ -147,21 +175,27 @@ struct KeyButton: View {
                 .foregroundColor(.primary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
-                .glassModifier(in: RoundedRectangle(cornerRadius: 15))
-
+                .glassModifier(in: RoundedRectangle(cornerRadius: 20))
+                .contentShape(RoundedRectangle(cornerRadius: 20))
+                .background(Color.white.opacity(0.001)) // Ensure it's hit-testable even if glass fails
         }
+        .buttonStyle(PopButtonStyle())
         .opacity(isDisabled ? 0.2 : 1.0)
         .disabled(isDisabled)
         .animation(.easeInOut(duration: 0.2), value: isDisabled)
     }
 }
 
-#Preview {
-    let sampleKeys = Array("alphabe").map { KeyItem(id: UUID(), character: $0) }
+#Preview("10 Keys Layout") {
+    let sampleKeys = Array("abcdefghij").map { KeyItem(id: UUID(), character: $0) }
     return KeypadView(
-        currentInput: "ALPHA",
+        currentInput: "ABC",
         validationColor: Color(UIColor.secondarySystemBackground),
         keys: sampleKeys,
-        disabledKeys: Set([sampleKeys[0].id, sampleKeys[2].id])
+        disabledKeys: Set([])
     )
+}
+#Preview {
+    GameView()
+        .modelContainer(PreviewHelper.container)
 }

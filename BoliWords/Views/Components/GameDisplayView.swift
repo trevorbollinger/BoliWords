@@ -6,13 +6,24 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct GameDisplayView: View {
     let foundWords: Set<String>
     let allWords: [String]
+    let targetWord: String?
     
     private var sortedWords: [String] {
-        allWords.sorted { a, b in
+        let target = targetWord?.lowercased()
+        return allWords.sorted { a, b in
+            let aLow = a.lowercased()
+            let bLow = b.lowercased()
+            
+            // If one of the words is the target, it always goes to the end
+            if aLow == target { return false }
+            if bLow == target { return true }
+            
+            // Otherwise, sort by length then alphabetically
             if a.count != b.count {
                 return a.count < b.count
             }
@@ -38,12 +49,34 @@ struct GameDisplayView: View {
             }
             .font(.subheadline)
             
-            FlowLayout(spacing: 8) {
-                ForEach(sortedWords, id: \.self) { word in
-                    WordCapsule(word: word, isFound: foundWords.contains(word))
+            // Progress Bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(.secondary.opacity(0.2))
+                        .frame(height: 8)
+                    
+                    Capsule()
+                        .fill(foundWords.count == allWords.count ? Color.green : Color.accentColor)
+                        .frame(width: max(0, min(geo.size.width, geo.size.width * CGFloat(foundWords.count) / CGFloat(max(1, allWords.count)))), height: 8)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: foundWords.count)
                 }
             }
+            .frame(height: 8)
             .padding(.horizontal, 4)
+            
+            ScrollView {
+                FlowLayout(spacing: 0) {
+                    ForEach(sortedWords, id: \.self) { word in
+                        WordCapsule(word: word, isFound: foundWords.contains(word))
+                            .padding(6)
+                    }
+                }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 8)
+            }
+            .frame(maxHeight: 187)
+            .scrollIndicators(.hidden)
         }
         .frame(maxWidth: .infinity)
         .padding()
@@ -72,7 +105,7 @@ struct WordCapsule: View {
             )
             .scaleEffect(justFound ? 1.1 : 1.0)
             .onChange(of: isFound) { oldValue, newValue in
-                if newValue {
+                if newValue && oldValue == false {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         justFound = true
                     }
@@ -95,5 +128,10 @@ struct WordCapsule: View {
 
 
 #Preview {
-    GameDisplayView(foundWords: ["eat"], allWords: ["eat", "tea", "at", "ate"])
+    GameDisplayView(foundWords: ["eat"], allWords: ["eat", "tea", "at", "ate"], targetWord: "ate")
+}
+
+#Preview {
+    GameView()
+        .modelContainer(PreviewHelper.container)
 }

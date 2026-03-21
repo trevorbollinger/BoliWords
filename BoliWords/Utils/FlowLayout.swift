@@ -2,7 +2,7 @@
 //  FlowLayout.swift
 //  BoliWords
 //
-//  Created by Antigravity on 3/18/26.
+//  Created by Trevor Bollinger on 3/18/26.
 //
 
 import SwiftUI

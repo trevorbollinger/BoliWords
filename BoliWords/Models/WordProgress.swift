@@ -2,7 +2,7 @@
 //  WordProgress.swift
 //  BoliWords
 //
-//  Created by Antigravity on 3/17/26.
+//  Created by Trevor Bollinger on 3/17/26.
 //
 
 import Foundation

@@ -2,7 +2,7 @@
 //  WordListView.swift
 //  BoliWords
 //
-//  Created by Antigravity on 3/17/26.
+//  Created by Trevor Bollinger on 3/17/26.
 //
 
 import SwiftUI
@@ -15,6 +15,7 @@ struct WordListView: View {
     let onSelectWord: (Int) -> Void
     
     @Query(sort: \WordProgress.lastPlayed, order: .reverse) private var progresses: [WordProgress]
+    @AppStorage("debugMode") private var debugMode: Bool = false
     @State private var allWords: [String] = []
     @State private var isLoading = true
     
@@ -50,15 +51,15 @@ struct WordListView: View {
                             let isLocked = index > maxUnlocked
                             
                             Button {
-                                if !isLocked {
+                                if !isLocked || debugMode {
                                     onSelectWord(index)
                                     dismiss()
                                 }
                             } label: {
-                                WordRow(word: word, progress: progress, index: index + 1, isLocked: isLocked)
+                                WordRow(word: word, progress: progress, index: index + 1, isLocked: isLocked && !debugMode)
                             }
                             .buttonStyle(.plain)
-                            .disabled(isLocked)
+                            .disabled(isLocked && !debugMode)
                         }
                     }
                 }
@@ -147,6 +148,9 @@ struct WordRow: View {
             }
         }
         .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .background(Color.white.opacity(0.001)) 
     }
 }
 
